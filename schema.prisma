@@ -1,0 +1,79 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  image     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Game progress
+  hearts         Int      @default(5)
+  xp             Int      @default(0)
+  totalXp        Int      @default(0)
+  streak         Int      @default(0)
+  gems           Int      @default(100)
+  currentStage   Int      @default(1)
+  currentSubStage Int     @default(1)
+  lastPlayDate   DateTime?
+  
+  // Completed lessons
+  completedLessons UserLesson[]
+  
+  @@map("users")
+}
+
+model Lesson {
+  id       Int    @id @default(autoincrement())
+  stage    Int
+  subStage Int
+  title    String
+  
+  questions Question[]
+  completedBy UserLesson[]
+  
+  @@unique([stage, subStage])
+  @@map("lessons")
+}
+
+model Question {
+  id           Int          @id @default(autoincrement())
+  lessonId     Int
+  questionType QuestionType
+  json         Json // Stores question data as JSON
+  
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  
+  @@map("questions")
+}
+
+model UserLesson {
+  id       String @id @default(cuid())
+  userId   String
+  lessonId Int
+  score    Int    @default(0)
+  mistakes Int    @default(0)
+  completedAt DateTime @default(now())
+  
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, lessonId])
+  @@map("user_lessons")
+}
+
+enum QuestionType {
+  MEANING_MC
+  WORD_ORDER  
+  TYPE_HEAR
+  PIC_MATCH
+  LISTENING_MC
+}
